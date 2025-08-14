@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuito RC - Análisis Gráfico</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .parametros {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        .parametros h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .input-group {
+            display: inline-block;
+            margin: 10px 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .input-group input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn-actualizar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.3s;
+            margin: 20px 0;
+        }
+        .btn-actualizar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .graficas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .grafica {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+        .grafica h3 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .canvas-container {
+            position: relative;
+            height: 300px;
+            margin: 15px 0;
+        }
+        .tabla-valores {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        .tabla-valores table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .tabla-valores th, .tabla-valores td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .tabla-valores th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        .tabla-valores tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .ecuaciones {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #2196f3;
+        }
+        .ecuacion {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Análisis del Circuito RC - Proceso de Carga</h1>
+        
+        <div class="parametros">
+            <h3>🔧 Parámetros del Circuito</h3>
+            <div class="input-group">
+                <label for="resistencia">Resistencia (Ω):</label>
+                <input type="number" id="resistencia" value="1000" min="1">
+            </div>
+            <div class="input-group">
+                <label for="capacitancia">Capacitancia (μF):</label>
+                <input type="number" id="capacitancia" value="100" min="0.1" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="voltaje">Voltaje Fuente (V):</label>
+                <input type="number" id="voltaje" value="12" min="1" step="0.1">
+            </div>
+            <br>
+            <button class="btn-actualizar" onclick="actualizarGraficas()">🔄 Actualizar Gráficas</button>
+            <div id="info-tau" style="margin-top: 15px; font-weight: bold; color: #667eea;"></div>
+        </div>
+
+        <div class="graficas">
+            <div class="grafica">
+                <h3>⚡ Voltaje en el Capacitor</h3>
+                <div class="canvas-container">
+                    <canvas id="graficoVoltaje"></canvas>
+                </div>
+            </div>
+            <div class="grafica">
+                <h3>🔋 Carga en el Capacitor</h3>
+                <div class="canvas-container">
+                    <canvas id="graficoCarga"></canvas>
+                </div>
+            </div>
+            <div class="grafica">
+                <h3>🔌 Corriente en el Circuito</h3>
+                <div class="canvas-container">
+                    <canvas id="graficoCorriente"></canvas>
+                </div>
+            </div>
+            <div class="grafica">
+                <h3>📈 Derivada del Voltaje</h3>
+                <div class="canvas-container">
+                    <canvas id="graficoDerivada"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabla-valores">
+            <h3>📋 Tabla de Valores Calculados</h3>
+            <table id="tablaValores">
+                <thead>
+                    <tr>
+                        <th>Tiempo (s)</th>
+                        <th>V_C (V)</th>
+                        <th>Q (mC)</th>
+                        <th>I (mA)</th>
+                        <th>dV_C/dt (V/s)</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ecuaciones">
+            <h3>📐 Ecuaciones Utilizadas</h3>
+            <div class="ecuacion" id="ecuacion-voltaje"></div>
+            <div class="ecuacion" id="ecuacion-carga"></div>
+            <div class="ecuacion" id="ecuacion-corriente"></div>
+            <div class="ecuacion" id="ecuacion-derivada"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales para los gráficos
+        let graficoVoltaje, graficoCarga, graficoCorriente, graficoDerivada;
+        
+        function calcularCircuitoRC() {
+            const R = parseFloat(document.getElementById('resistencia').value);
+            const C = parseFloat(document.getElementById('capacitancia').value) * 1e-6; // Convertir μF a F
+            const V0 = parseFloat(document.getElementById('voltaje').value);
+            const tau = R * C;
+            
+            // Actualizar info de tau
+            document.getElementById('info-tau').innerHTML = 
+                `τ = R × C = ${R} × ${(C*1e6).toFixed(1)} μF = ${tau.toFixed(4)} s`;
+            
+            // Generar datos
+            const puntos = 200;
+            const tMax = 5 * tau;
+            const tiempo = [];
+            const voltaje = [];
+            const carga = [];
+            const corriente = [];
+            const derivada = [];
+            
+            for (let i = 0; i <= puntos; i++) {
+                const t = i * tMax / puntos;
+                tiempo.push(t);
+                
+                const vc = V0 * (1 - Math.exp(-t / tau));
+                const q = C * vc * 1000; // mC
+                const current = (V0 / R) * Math.exp(-t / tau) * 1000; // mA
+                const der = (V0 / tau) * Math.exp(-t / tau);
+                
+                voltaje.push(vc);
+                carga.push(q);
+                corriente.push(current);
+                derivada.push(der);
+            }
+            
+            return { tiempo, voltaje, carga, corriente, derivada, tau, R, C, V0 };
+        }
+        
+        function actualizarGraficas() {
+            const datos = calcularCircuitoRC();
+            
+            // Configuración común para todos los gráficos
+            const configComun = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tiempo (s)',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        grid: { alpha: 0.3 }
+                    },
+                    y: {
+                        grid: { alpha: 0.3 }
+                    }
+                },
+                elements: {
+                    point: { radius: 0 },
+                    line: { borderWidth: 3 }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                }
+            };
+            
+            // Gráfico de Voltaje
+            if (graficoVoltaje) graficoVoltaje.destroy();
+            const ctxVoltaje = document.getElementById('graficoVoltaje').getContext('2d');
+            graficoVoltaje = new Chart(ctxVoltaje, {
+                type: 'line',
+                data: {
+                    labels: datos.tiempo.map(t => t.toFixed(4)),
+                    datasets: [{
+                        label: `V_C(t) = ${datos.V0}(1 - e^(-t/${datos.tau.toFixed(4)}))`,
+                        data: datos.voltaje,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...configComun,
+                    scales: {
+                        ...configComun.scales,
+                        y: {
+                            ...configComun.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Voltaje V_C (V)',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de Carga
+            if (graficoCarga) graficoCarga.destroy();
+            const ctxCarga = document.getElementById('graficoCarga').getContext('2d');
+            graficoCarga = new Chart(ctxCarga, {
+                type: 'line',
+                data: {
+                    labels: datos.tiempo.map(t => t.toFixed(4)),
+                    datasets: [{
+                        label: 'Q(t) = C × V_C(t)',
+                        data: datos.carga,
+                        borderColor: 'rgb(153, 102, 255)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...configComun,
+                    scales: {
+                        ...configComun.scales,
+                        y: {
+                            ...configComun.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Carga Q (mC)',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de Corriente
+            if (graficoCorriente) graficoCorriente.destroy();
+            const ctxCorriente = document.getElementById('graficoCorriente').getContext('2d');
+            graficoCorriente = new Chart(ctxCorriente, {
+                type: 'line',
+                data: {
+                    labels: datos.tiempo.map(t => t.toFixed(4)),
+                    datasets: [{
+                        label: `I(t) = (${datos.V0}/${datos.R})e^(-t/${datos.tau.toFixed(4)})`,
+                        data: datos.corriente,
+                        borderColor: 'rgb(255, 159, 64)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...configComun,
+                    scales: {
+                        ...configComun.scales,
+                        y: {
+                            ...configComun.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Corriente I (mA)',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de Derivada
+            if (graficoDerivada) graficoDerivada.destroy();
+            const ctxDerivada = document.getElementById('graficoDerivada').getContext('2d');
+            graficoDerivada = new Chart(ctxDerivada, {
+                type: 'line',
+                data: {
+                    labels: datos.tiempo.map(t => t.toFixed(4)),
+                    datasets: [{
+                        label: `dV_C/dt = (${datos.V0}/${datos.tau.toFixed(4)})e^(-t/${datos.tau.toFixed(4)})`,
+                        data: datos.derivada,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...configComun,
+                    scales: {
+                        ...configComun.scales,
+                        y: {
+                            ...configComun.scales.y,
+                            title: {
+                                display: true,
+                                text: 'dV_C/dt (V/s)',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Actualizar tabla
+            actualizarTabla(datos);
+            
+            // Actualizar ecuaciones
+            actualizarEcuaciones(datos);
+        }
+        
+        function actualizarTabla(datos) {
+            const tbody = document.getElementById('tablaBody');
+            tbody.innerHTML = '';
+            
+            const tiemposImportantes = [0, datos.tau/4, datos.tau/2, datos.tau, 2*datos.tau, 3*datos.tau, 4*datos.tau, 5*datos.tau];
+            
+            tiemposImportantes.forEach(t => {
+                const vc = datos.V0 * (1 - Math.exp(-t / datos.tau));
+                const q = datos.C * vc * 1000;
+                const current = (datos.V0 / datos.R) * Math.exp(-t / datos.tau) * 1000;
+                const der = (datos.V0 / datos.tau) * Math.exp(-t / datos.tau);
+                
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = t.toFixed(4);
+                row.insertCell(1).textContent = vc.toFixed(3);
+                row.insertCell(2).textContent = q.toFixed(3);
+                row.insertCell(3).textContent = current.toFixed(3);
+                row.insertCell(4).textContent = der.toFixed(3);
+                
+                if (Math.abs(t - datos.tau) < 1e-10) {
+                    row.style.backgroundColor = '#e8f5e8';
+                    row.style.fontWeight = 'bold';
+                }
+            });
+        }
+        
+        function actualizarEcuaciones(datos) {
+            document.getElementById('ecuacion-voltaje').innerHTML = 
+                `1. Voltaje: V_C(t) = ${datos.V0} × (1 - e^(-t/${datos.tau.toFixed(4)})) V`;
+            document.getElementById('ecuacion-carga').innerHTML = 
+                `2. Carga: Q(t) = ${(datos.C*1e6).toFixed(1)} × 10⁻⁶ × V_C(t) C`;
+            document.getElementById('ecuacion-corriente').innerHTML = 
+                `3. Corriente: I(t) = ${(datos.V0/datos.R).toFixed(6)} × e^(-t/${datos.tau.toFixed(4)}) A`;
+            document.getElementById('ecuacion-derivada').innerHTML = 
+                `4. Derivada: dV_C/dt = ${(datos.V0/datos.tau).toFixed(1)} × e^(-t/${datos.tau.toFixed(4)}) V/s`;
+        }
+        
+        // Inicializar al cargar la página
+        window.onload = function() {
+            actualizarGraficas();
+        };
+    </script>
+</body>
+</html>
